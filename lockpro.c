@@ -1,139 +1,138 @@
-//
-// lock_pro.c
-//
-// Written by Der gruene V0gel (Adam Dunson)
-//
-// Purpose: To speed up the process of cracking a Master Lock
-//          combination lock.
-//
-
 #include <stdio.h>
-#include <stdlib.h>
 
-int main(int argc, char** argv)
-{
-	char buffer[4]; // stores input
+#define MIN 0
+#define MAX 39
+#define SIZE 10
 
-	int i, j;       // counter
-	int rem;        // stores the remainder, ie, the "magic number"
+void generate_numbers(int *numbers);
+int adjust(int number);
+int validate_range(int number);
+int validate_second(int second, int third);
+void print_first(int *first);
+void print_second(int *second, int third);
+void print_combinations(int *first, int *second, int third);
 
-	int num1[10];   // possible first combination number array
-	int num2[10];   // possible second combination number array
-	int num3=0;     // third combination number specified by the user
+int main(int argc, char** argv) {
+  int i, j, magic,
+      first[SIZE] = {0},
+      second[SIZE] = {0},
+      third = -1;
 
-	if(argc>1)      // if user specified input at command-line, read the input
-	{
-		sscanf(argv[1], "%d", &num3);
-	}
-	else {          // else, ask user for input
-		printf("Input the combination's third number (must be between 0-39): ");
-		fgets(buffer, 30, stdin);
-		sscanf(buffer, "%d", &num3);
-	}
-	if(num3 < 0 || num3 > 39) exit(EXIT_FAILURE); // exit program and return EXIT_FAILURE if input is bad
+  if (argc == 2) {
+    sscanf(argv[1], "%2d", &third);
+    if (third == 0 && argv[1][0] != '0')
+      third = -1;
+  }
 
-	rem = num3 % 4;     // get the "magic number"
+  if (!validate_range(third)) {
+    printf("Usage: ./lockpro THIRD\n");
+    printf("THIRD should be between %d and %d.\n", MIN, MAX);
+    return 1;
+  }
 
-	num1[0] = rem;      // initialize possible first number array
-	//
-	for(i=1; i<10; i++) // create the rest of the first number array
-	{
-		if(num1[i-1] + 4 <= 39) num1[i] = num1[i-1] + 4;
-	}
-	// initialize second number array . . .
-	if(rem == 0 || rem == 1) num2[0] = rem + 2;         // add 2 if "magic number" is 0 or 1
-	else if(rem == 2 || rem == 3) num2[0] = rem - 2;    // else subtract 2 if it's 2 or 3
+  magic = third % 4;
+  first[0] = magic;
+  generate_numbers(first);
 
-	for(i=1; i<10; i++) // create the rest of the second number array
-	{
-		if(((num2[i-1] + 4) <= 39)) num2[i] = num2[i-1] + 4;
-	}
+  if (magic < 2) second[0] = magic + 2;
+  else second[0] = magic - 2;
+  generate_numbers(second);
 
-	printf("Possible first numbers:  ");    // print the first number array
-	for(i=0; i<10; i++)
-	{
-		printf("%d  ", num1[i]);
-	}
+  print_first(first);
+  print_second(second, third);
+  print_combinations(first, second, third);
 
-	printf("\nPossible second numbers: ");  // print the second number array
-	for(i=0; i<10; i++)
-	{
-		switch(num3) // filter output
-		{
-			case 0:
-				if(num2[i] != 38 && num2[i] != num3 + 2)
-				{
-					printf("%d  ", num2[i]);
-				}
-				break;
-			case 1:
-				if(num2[i] != 39 && num2[i] != num3 + 2)
-				{
-					printf("%d  ", num2[i]);
-				}
-				break;
-			case 38:
-				if(num2[i] != 0 && num2[i] != num3 - 2)
-				{
-					printf("%d  ", num2[i]);
-				}
-				break;
-			case 39:
-				if(num2[i] != 1 && num2[i] != num3 - 2)
-				{
-					printf("%d  ", num2[i]);
-				}
-				break;
-			default:
-				if(num2[i] != num3 - 2 && num2[i] != num3 + 2)
-				{
-					printf("%d  ", num2[i]);
-				}
-		}
-	}
+  return 0;
+}
 
-	printf("\nPossible combinations:\n"); // list all possible combination
-	for(i=0; i<10; i++)
-	{
-		for(j=0; j<10; j++)
-		{
-			if(num2[j] != num3 - 2 && num2[j] != num3 + 2)
-			{
-				switch(num3)    // filter output
-				{
-					case 0:
-						if(num2[j] != 38 && num2[j] != num3 + 2)
-						{
-							printf("(%d, %d, %d)\n", num1[i], num2[j], num3);
-						}
-						break;
-					case 1:
-						if(num2[j] != 39 && num2[j] != num3 + 2)
-						{
-							printf("(%d, %d, %d)\n", num1[i], num2[j], num3);
-						}
-						break;
-					case 38:
-						if(num2[j] != 0 && num2[j] != num3 - 2)
-						{
-							printf("(%d, %d, %d)\n", num1[i], num2[j], num3);
-						}
-						break;
-					case 39:
-						if(num2[j] != 1 && num2[j] != num3 - 2)
-						{
-							printf("(%d, %d, %d)\n", num1[i], num2[j], num3);
-						}
-						break;
-					default:
-						if(num2[j] != num3 - 2 && num2[j] != num3 + 2)
-						{
-							printf("(%d, %d, %d)\n", num1[i], num2[j], num3);
-						}
-				}
-			}
-		}
-	}
+/**
+ * Generate numbers, starting at numbers[i-1] and incrementing by 4.
+ * @param[out]  numbers  the array to store the numbers
+ */
+void generate_numbers(int *numbers) {
+  int i;
+  for (i=1; i<SIZE; i++)
+    numbers[i] = numbers[i-1] + 4;
+}
 
-	return EXIT_SUCCESS;    // if the program has reached this point, go ahead and return EXIT_SUCCE
+/**
+ * Adjust the number to within [0, MAX] using modulus.
+ * @param[in]  number  the number to adjust
+ * @return  the adjusted number
+ */
+int adjust(int number) {
+  return number % (MAX + 1);
+}
+
+/**
+ * Validate whether number is within [MIN, MAX].
+ * @param[in]  number  the number to validate
+ * @return  1 if valid, 0 if not
+ */
+int validate_range(int number) {
+  return number >= MIN && number <= MAX;
+}
+
+/**
+ * Check whether the second number is valid.
+ *
+ * The second number is valid if:
+ *
+ * 1. it is within [MIN, MAX]
+ * 2. it is not within 2 of third (after adjustments)
+ *
+ * @param[in]  second  the number to validate
+ * @param[in]  third  used as part of the validation
+ * @return  1 if valid, 0 if not
+ */
+int validate_second(int second, int third) {
+  return validate_range(second) &&
+         second != adjust(third - 2) &&
+         second != adjust(third + 2);
+}
+
+/**
+ * Print the array of first numbers.
+ * @param[in]  first  the array of first numbers
+ */
+void print_first(int *first) {
+  printf("Possible first numbers:  ");
+  int i;
+  for (i=0; i<SIZE; i++) {
+    if (validate_range(first[i]))
+      printf("%-4d", first[i]);
+  }
+  printf("\n");
+}
+
+/**
+ * Print the array of second numbers.
+ * @param[in]  second  the array of second numbers
+ * @param[in]  third  used to validate the second number when printing
+ */
+void print_second(int *second, int third) {
+  printf("Possible second numbers: ");
+  int i;
+  for (i=0; i<SIZE; i++) {
+    if (validate_second(second[i], third))
+      printf("%-4d", second[i]);
+  }
+  printf("\n");
+}
+
+/**
+ * Print all possible combinations.
+ * @param[in]  first  the array of first numbers
+ * @param[in]  second  the array of second numbers
+ * @param[in]  third  the third number
+ */
+void print_combinations(int *first, int *second, int third) {
+  printf("Possible combinations:\n");
+  int i, j;
+  for (i=0; i<SIZE; i++) {
+    for (j=0; j<SIZE; j++) {
+      if (validate_second(second[j], third))
+        printf("(%d, %d, %d)\n", first[i], second[j], third);
+    }
+  }
 }

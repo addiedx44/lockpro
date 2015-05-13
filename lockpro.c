@@ -13,7 +13,7 @@ void print_second(int *second, int third);
 void print_combinations(int *first, int *second, int third);
 
 int main(int argc, char** argv) {
-  int i, j, magic,
+  int i, j,
       first[SIZE] = {0},
       second[SIZE] = {0},
       third = -1;
@@ -30,12 +30,10 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  magic = third % 4;
-  first[0] = magic;
+  first[0] = third % 4;
   generate_numbers(first);
 
-  if (magic < 2) second[0] = magic + 2;
-  else second[0] = magic - 2;
+  second[0] = (first[0] + 2) % 4;
   generate_numbers(second);
 
   print_first(first);

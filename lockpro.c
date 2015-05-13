@@ -13,8 +13,7 @@ void print_second(int *second, int third);
 void print_combinations(int *first, int *second, int third);
 
 int main(int argc, char** argv) {
-  int i, j,
-      first[SIZE] = {0},
+  int first[SIZE] = {0},
       second[SIZE] = {0},
       third = -1;
 
@@ -26,7 +25,7 @@ int main(int argc, char** argv) {
 
   if (!validate_range(third)) {
     printf("Usage: ./lockpro THIRD\n");
-    printf("THIRD should be between %d and %d.\n", MIN, MAX);
+    printf("THIRD should be an integer between %d and %d.\n", MIN, MAX);
     return 1;
   }
 
